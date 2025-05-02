@@ -25,7 +25,7 @@ export default function Chatbot() {
       const department = await classifyComplaint(complaint);
       setSuggestedDept(department);
       setDept(department);
-      setStep(2);
+      setStep(2); // Move setStep(2) only after async finishes
     } catch (err) {
       setError('Could not classify department. You can select manually.');
       setStep(2);
