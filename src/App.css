@@ -24,6 +24,47 @@
   color: white;
 }
 
+.card {
+  background: #232526;
+  border-radius: 16px;
+  box-shadow: 0 6px 24px 0 rgba(0,0,0,0.25);
+  padding: 28px 22px;
+  margin: 20px 0;
+}
+
+input, textarea, select {
+  background: #232526;
+  color: #f2f2f2;
+  border: 1.5px solid #444;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 1rem;
+  margin-bottom: 10px;
+  outline: none;
+  transition: border 0.2s;
+}
+input:focus, textarea:focus, select:focus {
+  border: 1.5px solid #00bcd4;
+}
+
+button {
+  background: linear-gradient(90deg, #00bcd4 60%, #0097a7 100%);
+  color: #18191A;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 12px 0;
+  margin: 8px 0;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+button:hover {
+  background: linear-gradient(90deg, #0097a7 60%, #00bcd4 100%);
+  color: #fff;
+}
+
 .App-link {
   color: #61dafb;
 }
