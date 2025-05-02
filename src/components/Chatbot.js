@@ -13,6 +13,8 @@ export default function Chatbot() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [myComplaints, setMyComplaints] = useState([]);
+  const [loadingComplaints, setLoadingComplaints] = useState(false);
 
   // On complaint entry, classify with Gemini
   const handleClassify = async (e) => {
@@ -80,12 +82,69 @@ export default function Chatbot() {
       </div>
       <div style={{ width: '100%', maxWidth: 480, background: 'rgba(30,30,32,0.95)', borderRadius: 20, boxShadow: '0 8px 32px 0 rgba(0,0,0,0.45)', padding: 32, margin: '0 auto' }}>
         {step === 0 && (
+        <>
         <form onSubmit={() => setStep(1)}>
           <label style={{ fontWeight: 500, color: '#fff' }}>Your Name:<br />
             <input value={name} onChange={e => setName(e.target.value)} required style={{ width: '100%', padding: 8, marginTop: 4, borderRadius: 6, border: '1px solid #444', background: '#242526', color: '#eee' }} />
           </label><br /><br />
-          <button type="submit" style={{ width: '100%', padding: 10, background: '#00bcd4', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 600, letterSpacing: 1 }}>Next</button>
+          <button type="submit" style={{ width: '100%', padding: 10, background: '#00bcd4', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 600, letterSpacing: 1, marginBottom: 8 }}>Next</button>
         </form>
+        <button onClick={async () => {
+          setLoadingComplaints(true);
+          setError('');
+          setStatus(null);
+          setMyComplaints([]);
+          try {
+            const res = await fetch(`${API_BASE}/complaints_by_user?name=${encodeURIComponent(name)}`);
+            const data = await res.json();
+            if (res.ok) {
+              setMyComplaints(data);
+            } else {
+              setError(data.error || 'Could not fetch complaints');
+            }
+          } catch (err) {
+            setError('Network error');
+          }
+          setLoadingComplaints(false);
+        }}
+        disabled={!name || loadingComplaints}
+        style={{ width: '100%', padding: 10, background: '#232526', color: '#fff', border: '1.5px solid #00bcd4', borderRadius: 6, fontWeight: 600, letterSpacing: 1, marginTop: 8 }}>
+          {loadingComplaints ? 'Loading...' : 'View My Complaints'}
+        </button>
+        {myComplaints.length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <h3 style={{ color: '#00bcd4', marginBottom: 12 }}>My Complaints</h3>
+            {myComplaints.map((c, idx) => (
+              <div key={c.ticket_id} style={{ background: '#232526', border: '1.5px solid #00bcd4', borderRadius: 12, padding: 16, marginBottom: 16, color: '#fff', boxShadow: '0 2px 8px #111' }}>
+                <div style={{ marginBottom: 4 }}><span style={{ fontWeight: 700, color: '#00bcd4' }}>Ticket ID:</span> <span style={{ fontWeight: 500 }}>{c.ticket_id}</span></div>
+                <div style={{ marginBottom: 4 }}><span style={{ fontWeight: 700 }}>Department:</span> <span>{c.department}</span></div>
+                <div style={{ marginBottom: 4 }}><span style={{ fontWeight: 700 }}>Status:</span> <span>{c.status}</span></div>
+                <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 700 }}>Complaint:</span> <span>{c.complaint}</span></div>
+                <button style={{ marginTop: 8, background: '#00bcd4', color: '#18191A', border: 'none', borderRadius: 6, fontWeight: 700, letterSpacing: 1, padding: '8px 16px', fontSize: '1rem' }}
+                  onClick={async () => {
+                    setLoading(true);
+                    setError('');
+                    setTicketId(c.ticket_id);
+                    try {
+                      const res = await fetch(`${API_BASE}/get_status?ticket_id=${c.ticket_id}`);
+                      const data = await res.json();
+                      if (res.ok) {
+                        setStatus(data);
+                        setStep(4);
+                      } else {
+                        setError(data.error || 'Not found');
+                      }
+                    } catch (err) {
+                      setError('Network error');
+                    }
+                    setLoading(false);
+                  }}
+                >Check Status</button>
+              </div>
+            ))}
+          </div>
+        )}
+        </>
       )}
       {step === 1 && (
         <form onSubmit={handleClassify}>
@@ -130,15 +189,21 @@ export default function Chatbot() {
         </form>
       )}
       {status && (
-        <div style={{ marginTop: 24, padding: 16, background: '#fff', borderRadius: 8, border: '1px solid #e0e0e0' }}>
-          <h4>Status: <span style={{ color: status.status === 'Resolved' ? 'green' : '#2d5e7c' }}>{status.status}</span></h4>
-          <p><b>Department:</b> {status.department}</p>
-          <p><b>Complaint:</b> {status.complaint}</p>
-          <p><b>Updates:</b></p>
-          <ul style={{ paddingLeft: 18 }}>
+        <div style={{ marginTop: 32, padding: 24, background: '#232526', borderRadius: 14, border: '1.5px solid #00bcd4', color: '#fff', boxShadow: '0 2px 16px #111', maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
+          <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 10 }}>
+            Status: <span style={{ color: status.status === 'Resolved' ? '#4caf50' : '#00bcd4' }}>{status.status}</span>
+          </div>
+          <div style={{ fontWeight: 700, marginBottom: 6 }}>Department: <span style={{ fontWeight: 400 }}>{status.department}</span></div>
+          <div style={{ fontWeight: 700, marginBottom: 14 }}>Complaint: <span style={{ fontWeight: 400 }}>{status.complaint}</span></div>
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>Updates:</div>
+          <ul style={{ paddingLeft: 0, listStyle: 'none', margin: 0 }}>
             {status.updates && status.updates.length > 0 ? status.updates.map((u, i) => (
-              <li key={i}>{u.status} by {u.officer} ({u.timestamp}): {u.remark}</li>
-            )) : <li>No updates yet.</li>}
+              <li key={i} style={{ background: '#18191A', borderRadius: 8, marginBottom: 10, padding: '10px 14px', border: '1px solid #333' }}>
+                <div style={{ fontWeight: 600, color: '#00bcd4', marginBottom: 2 }}>{u.status} <span style={{ color: '#bbb', fontWeight: 400 }}>by {u.officer}</span></div>
+                <div style={{ fontSize: 13, color: '#bbb', marginBottom: 2 }}>{new Date(u.timestamp).toLocaleString()}</div>
+                <div style={{ color: '#fff' }}>{u.remark}</div>
+              </li>
+            )) : <li style={{ color: '#bbb' }}>No updates yet.</li>}
           </ul>
         </div>
       )}
